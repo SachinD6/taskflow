@@ -22,6 +22,10 @@ const options: swaggerJsDoc.Options = {
                     },
                 },
             },
+            {
+                url: "https://smg-taskflow.duckdns.org/api/v1",
+                description: "Production server",
+            },
         ],
         components: {
             securitySchemes: {
@@ -33,7 +37,8 @@ const options: swaggerJsDoc.Options = {
             },
         },
     },
-    apis: ["./src/routes/v1/*.ts"],
+    // Scan both src (for development) and dist (for production Docker container)
+    apis: ["./src/routes/v1/*.ts", "./dist/routes/v1/*.js"],
 };
 
 export const swaggerSpec = swaggerJsDoc(options);
