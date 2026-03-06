@@ -1,0 +1,54 @@
+name: TaskFlow CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build & Verify Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install & Build Backend
+        working-directory: ./server
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install & Build Frontend
+        working-directory: ./client
+        run: |
+          npm ci
+          npm run build
+
+  deploy-backend:
+    name: Deploy API to EC2
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute Deployment over SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navigate to the app directory (ensure you have cloned it here previously)
+            cd /home/ubuntu/taskflow
+            
+            # Pull the completely fresh code from main
+            git pull origin main
+            
+            # Rebuild the docker image and restart the container cleanly in the background
+            sudo docker compose up -d --build
